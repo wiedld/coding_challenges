@@ -63,16 +63,18 @@ def id_anagrams_in_file(path):
 
     # create output list from dict_anagrams
     #  is not an "anagram" unless there is more than 1 value in
-    output = [v for k,v in dict_anagrams.items() if len(v)>1]
 
-    return output
+    for list_values in dict_anagrams.values():
+        print ", ".join(map(str,list_values))
+
+
 
 
 
 
 def sort_str(astring):
     """ input string.  output ordered string for dict keys"""
-    key =''.join(sorted(astring))
+    key =', '.join(sorted(astring))
     # sorted returns as a listed, then join to string again.
 
     return key
@@ -81,7 +83,7 @@ def sort_str(astring):
 
 
 test = "test.txt"
-print id_anagrams_in_file(test)
+id_anagrams_in_file(test)
 
 
 
