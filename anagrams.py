@@ -65,7 +65,8 @@ def id_anagrams_in_file(path):
     #  is not an "anagram" unless there is more than 1 value in
 
     for list_values in dict_anagrams.values():
-        print ", ".join(map(str,list_values))
+        if len(list_values) > 1:
+            print ", ".join(map(str,list_values))
 
 
 
