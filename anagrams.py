@@ -35,17 +35,11 @@
 #         - insertion time = O(1), has table, per m= words to insert.
 #         - total:  m(nlogn) sorting * m dict insertion.
 #         ~  nlogn time.
-# - other approach, instead of sorting to a dict key.
-#         - achar in string into a set (iterating = O(n)) * m words
-#         - same use as key in dict
-#             - set is unordered.  so equivalency should work (e,m,i,t)==(i,t,e,m).
-#             - but set is mutable.  need to convert to tuple to be a key.  convert back to set O(m) for the comparison/equivalency.
-#         - total:  (2m * n keys/comparisons)  * m dict insertion
-#         ~ n linear time
+
 # - then of course the final step is the output of the values.  Iterating over dict values.  + nlogn.  And the same for both approaches.
 
 # choose:
-# - approach 2.
+# - approach 1.   **updated choice of approach**
 
 ##############################################################
 # SOLUTION
@@ -57,14 +51,15 @@ def id_anagrams_in_file(path):
 
     with open(path) as f:
         for word in f:      # each line = word
+            word = word.strip() # clean out whitespace
 
-            if len(word) > 4:       # metadata.  O(1)
-                word_as_set = str_to_set(word.strip())  # clean out whitespace
+            if len(word) >= 4:       # metadata.  O(1)
+                key = sort_str(word)
 
-                if word_as_set not in dict_anagrams:
-                    dict_anagrams[word_as_set] = [word]
+                if key not in dict_anagrams:
+                    dict_anagrams[key] = [word]
                 else:
-                    dict_anagrams[word_as_set].extend(word)
+                    dict_anagrams[key].append(word)
 
     # create output list from dict_anagrams
     #  is not an "anagram" unless there is more than 1 value in
@@ -75,11 +70,18 @@ def id_anagrams_in_file(path):
 
 
 
-def str_to_set(astring):
-    """ input string.  output unordered set with chars of string"""
-    pass
+def sort_str(astring):
+    """ input string.  output ordered string for dict keys"""
+    key =''.join(sorted(astring))
+    # sorted returns as a listed, then join to string again.
+
+    return key
 
 
+
+
+test = "test.txt"
+print id_anagrams_in_file(test)
 
 
 
