@@ -51,6 +51,43 @@
 # SOLUTION
 
 
+def id_anagrams_in_file(path):
+    """takes file path.  returns a list of lists, with each nested list of anagrams"""
+    dict_anagrams = {}
+
+    with open(path) as f:
+        for word in f:      # each line = word
+
+            if len(word) > 4:       # metadata.  O(1)
+                word_as_set = str_to_set(word.strip())  # clean out whitespace
+
+                if word_as_set not in dict_anagrams:
+                    dict_anagrams[word_as_set] = [word]
+                else:
+                    dict_anagrams[word_as_set].extend(word)
+
+    # create output list from dict_anagrams
+    #  is not an "anagram" unless there is more than 1 value in
+    output = [v for k,v in dict_anagrams.items() if len(v)>1]
+
+    return output
+
+
+
+
+def str_to_set(astring):
+    """ input string.  output unordered set with chars of string"""
+    pass
+
+
+
+
+
+
+
+
+
+
 
 
 
