@@ -13,6 +13,12 @@ class Stack(object):
         self.conversion_array = self.conversion_array[:-1]
         return value
 
+    def isEmpty(self):
+        if len(self.conversion_array) == 0:
+            return True
+        else:
+            return False
+
 
 
 
@@ -51,7 +57,7 @@ class Integer(Stack):
     def expression_from_stack(self):
         """takes the stack (associated with self), and returns the converted expression"""
         result = ""
-        while len(self.conversion_array) != 0:
+        while self.isEmpty() != True:
             result = result + self.conversion_array.pop()
         return result
 
