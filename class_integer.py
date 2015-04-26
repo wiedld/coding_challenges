@@ -14,10 +14,7 @@ class Stack(object):
         return value
 
     def isEmpty(self):
-        if len(self.conversion_array) == 0:
-            return True
-        else:
-            return False
+        return len(self.conversion_array) == 0
 
 
 
