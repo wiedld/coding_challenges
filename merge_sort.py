@@ -7,7 +7,6 @@ def merge_sort(alist):
         return alist
 
     midpt = len(alist)/2
-
     list1 = merge_sort(alist[:midpt])
     list2 = merge_sort(alist[midpt:])
 
@@ -31,12 +30,7 @@ def merge_lists(list1, list2):
             p1 = p1 + 1
 
     # one of the lists is empty
-    if len(list1) > p1:
-        output.extend(list1[p1:])
-    if len(list2) > p2:
-        output.extend(list2[p2:])
-
-    return output
+    return output + list1[p1:] + list2[p2:]
 
 
 
