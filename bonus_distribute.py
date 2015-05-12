@@ -1,17 +1,37 @@
+# OBJECTIVE:
+#
+#     - have 1000TB to distribute.
+#     - to not dilute impact, distribute 1 TB each to winners
+#     - id no more than 1000 winners, return list of keybase userid
+#
+# calculations with assumption at the bottom of the file.
+# Total time spend ~4.5 hours.  Definitely could have been better.
+
+# RESULT -- list of 664 keybase users
 
 
+################################################################
 
+
+# GET DATA - json.   works with the two data sources used (keybase, github).
 def retrieve_data(url):
     from urllib2 import urlopen
+    import json
 
     response = urlopen(url)
     result = response.read()
 
-    return eval(result)         # result is a list.  items are users.
+    output = json.loads(result)
+
+    return output
 
 
-def determine_num_following(result):
-    print len(result)
+################################################################
+##  RAW COUNTS ##
+
+
+# NUM FOLLOWING - keybase
+def determine_num_following_keybase(result):
 
     num_following_user = {}
     for user in result:
@@ -26,6 +46,46 @@ def determine_num_following(result):
     return num_following_user
 
 
+# NUM FOLLOWING - github
+def determine_num_following_github(result, users_most_accts):
+    """github doc: https://developer.github.com/v3/users/followers/"""
+    import os
+    client_id = os.environ["CLIENT_ID"]
+    client_token = os.environ["CLIENT_SECRET"]
+
+    num_following_user = {}
+
+    for user in result:
+        keybase_id = user["keybase"]
+
+        if "github" in user and keybase_id in users_most_accts:
+            github_id = user["github"]
+
+            print "api call for:", github_id
+            try:
+                url = "https://api.github.com/users/%s/followers?client_id=%s&client_secret=%s" % (github_id, client_id, client_token)
+                github_data = retrieve_data(url)
+                num_following_user[keybase_id] = len(github_data)
+            except:
+                pass
+
+    return num_following_user
+
+
+# NUM OF DEV ACCTS - keybase
+def determine_num_dev_accounts(result):
+
+    num_accts = {}
+    for user in result:            # each user is a dict of info
+        accts = user.keys()       # will return a list
+
+        user_id = user["keybase"]
+        num_accts[user_id] = len(accts)
+
+    return num_accts
+
+
+# used once -- to find all kinds of dev accts, and frequency of acct
 def make_list_account_types(result):
 
     acct_types = {}
@@ -41,16 +101,8 @@ def make_list_account_types(result):
     return acct_types
 
 
-def determine_num_dev_accounts(result):
-
-    num_accts = {}
-    for user in result:            # each user is a dict of info
-        accts = user.keys()       # will return a list
-
-        user_id = user["keybase"]
-        num_accts[user_id] = len(accts)
-
-    return num_accts
+################################################################
+##  ANALYTICS ##
 
 
 def determine_max(adict,k):
@@ -70,24 +122,45 @@ def determine_max(adict,k):
 
 ################################################################
 
+def main():
+    data = retrieve_data("https://keybase.io/jobs/q/b5c602f8306d711b?page=data")
 
-data = retrieve_data("https://keybase.io/jobs/q/b5c602f8306d711b?page=data")
+    # MOST FOLLOWED ON KEYBASE
+    # return 247 - take all 247
+    # assume these are influencers on keybase.  Good morale.
+    keybase_num_following_user = determine_num_following_keybase(data)
+    list_most_followed = determine_max(keybase_num_following_user,2)
+    print len(list_most_followed)
 
-# under the assumption that the most followed are influencers
-num_following_user = determine_num_following(data)
-list_most_followed = determine_max(num_following_user,3)
-print len(list_most_followed)   #121
+    # KEYBASE - MOST ACCTS
+    # returned 1420
+    # under the assumption that we want to reward those with more accounts
+    # print make_list_account_types(data)
+    ##  {'reddit': 6534, 'github': 25687, 'twitter': 24997,
+    # 'keybase': 44739, 'tracks': 44739, 'hackernews': 2866, 'pgp': 37128}
+    num_accts_ea_user = determine_num_dev_accounts(data)
+    most_accts = determine_max(num_accts_ea_user, 2)
+    print len(most_accts)
 
-# under the assumption that we want to reward those with more accounts
-# print make_list_account_types(data)
-##  {'reddit': 6534, 'github': 25687, 'twitter': 24997,
-# 'keybase': 44739, 'tracks': 44739, 'hackernews': 2866, 'pgp': 37128}
-num_accts_ea_user = determine_num_dev_accounts(data)
-most_accts = determine_max(num_accts_ea_user, 2)
-print len(most_accts) # 1420
+    # num of those in common between two selection criteria so far
+    print len([user for user in most_accts if user in list_most_followed])  #33
+    # therefore, do not limit the keybase influences
 
-# num of those in common between two selection criteria so far
-print len([user for user in most_accts if user in list_most_followed])  #16
+    # GITHUB  - MOST FOLLOWED
+    # due to api rate limitation, only check for followers of those with many keybase accts
+    # returned 444
+    github_num_following_user = determine_num_following_github(data, most_accts)
+    github_most_followed = determine_max(github_num_following_user,1)
+    print len(github_most_followed)
 
-# most number on github
-#  https://developer.github.com/v3/users/followers/
+
+    # FINAL BATCH
+    final_list = []
+    final_list.extend(list_most_followed)
+    final_list.extend(github_most_followed)
+    final_set = set(final_list)
+
+    return final_set, len(final_set)
+
+
+print main()
