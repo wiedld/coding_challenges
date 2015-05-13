@@ -1,22 +1,56 @@
 # OBJECTIVE:
 #
 #     - have 1000TB to distribute.
-#     - to not dilute impact, distribute 1 TB each to winners
+#     - to not dilute impact, distribute 1-2 TB each to winners
 #     - id no more than 1000 winners, return list of keybase userid
 #
 # calculations with assumption at the bottom of the file.
 # Total time spend ~4.5 hours.  Definitely could have been better.
 
-# RESULT -- list of 664 keybase users
+# APPROACH
+#
+    # MOST FOLLOWED ON KEYBASE
+    # return 247 - take all 247
+    # assume these are influencers on keybase.  Good morale.
 
+    # KEYBASE - MOST ACCTS
+    # returned 1420
+    # under the assumption that we want to reward those with more accounts
+
+    # GITHUB  - MOST FOLLOWED
+    # due to api rate limitation, only check for for sub-set of keybase users, who use service
+    # returned 444
+
+    # DETERMINE MOST LIKELY ACTIVE IN SOCIAL MEDIA:
+    # returns 1666, of which the majority are already in the most_accts (then ck'ed on github)
+    # therefore, did not include this dataset in final determination.
+
+
+# RESULT -- list of 664 keybase users, who are:
+#     - most followed on keybase, and/or
+#     - most accts, and most followed on github, and/or
+#     - if have one of the above, then 1x bonus storage
+#     - if have two of the above, then 2x bonus storage
+#     - divide up 1 TB accordingly
+
+
+# RETURNS - json array of users, with bonus amounts
 
 ################################################################
+from urllib2 import urlopen
+import json
+import numpy
+import sys
 
+# my tokens.  Other users need to source their own tokens.
+import os
+client_id = os.environ["CLIENT_ID"]
+client_token = os.environ["CLIENT_SECRET"]
 
+################################################################
 # GET DATA - json.   works with the two data sources used (keybase, github).
+
 def retrieve_data(url):
-    from urllib2 import urlopen
-    import json
 
     response = urlopen(url)
     result = response.read()
@@ -49,9 +83,6 @@ def determine_num_following_keybase(result):
 # NUM FOLLOWING - github
 def determine_num_following_github(result, users_most_accts):
     """github doc: https://developer.github.com/v3/users/followers/"""
-    import os
-    client_id = os.environ["CLIENT_ID"]
-    client_token = os.environ["CLIENT_SECRET"]
 
     num_following_user = {}
 
@@ -85,7 +116,20 @@ def determine_num_dev_accounts(result):
     return num_accts
 
 
-# used once -- to find all kinds of dev accts, and frequency of acct
+# LIKELY SOCIAL MEDIA PARTICIPANT - keybase - not just based on num accts
+def determine_most_media(result):
+    many_social_media = []
+    for user in result:            # each user is a dict of info
+        if "reddit" in user and "hackernews" in user and "twitter" in user:
+            many_social_media.append(user["keybase"])
+
+    return many_social_media
+
+
+################################################################
+
+# used once -- to find all the kinds of dev accts, and frequency of acct
+
 def make_list_account_types(result):
 
     acct_types = {}
@@ -101,6 +145,9 @@ def make_list_account_types(result):
     return acct_types
 
 
+    ##  {'reddit': 6534, 'github': 25687, 'twitter': 24997,
+    # 'keybase': 44739, 'tracks': 44739, 'hackernews': 2866, 'pgp': 37128}
+
 ################################################################
 ##  ANALYTICS ##
 
@@ -108,7 +155,6 @@ def make_list_account_types(result):
 def determine_max(adict,k):
     """takes a list of items, with values = int.
     returns a list of top items above 3 std threshold"""
-    import numpy
 
     # list of numbers, of followers
     num_followers = adict.values()
@@ -122,45 +168,60 @@ def determine_max(adict,k):
 
 ################################################################
 
-def main():
-    data = retrieve_data("https://keybase.io/jobs/q/b5c602f8306d711b?page=data")
+def main(path):
+    data = retrieve_data(path)
 
     # MOST FOLLOWED ON KEYBASE
     # return 247 - take all 247
     # assume these are influencers on keybase.  Good morale.
     keybase_num_following_user = determine_num_following_keybase(data)
     list_most_followed = determine_max(keybase_num_following_user,2)
-    print len(list_most_followed)
 
     # KEYBASE - MOST ACCTS
     # returned 1420
     # under the assumption that we want to reward those with more accounts
-    # print make_list_account_types(data)
-    ##  {'reddit': 6534, 'github': 25687, 'twitter': 24997,
-    # 'keybase': 44739, 'tracks': 44739, 'hackernews': 2866, 'pgp': 37128}
     num_accts_ea_user = determine_num_dev_accounts(data)
     most_accts = determine_max(num_accts_ea_user, 2)
-    print len(most_accts)
-
-    # num of those in common between two selection criteria so far
-    print len([user for user in most_accts if user in list_most_followed])  #33
-    # therefore, do not limit the keybase influences
 
     # GITHUB  - MOST FOLLOWED
-    # due to api rate limitation, only check for followers of those with many keybase accts
+    # due to api rate limitation, only check for for sub-set of keybase users, who use service
     # returned 444
-    github_num_following_user = determine_num_following_github(data, most_accts)
+    github_num_following_user = determine_num_following_github(data, users_to_ck_github)
     github_most_followed = determine_max(github_num_following_user,1)
-    print len(github_most_followed)
 
+    # DETERMINE MOST LIKELY ACTIVE IN SOCIAL MEDIA:
+    # returns 1666, of which the majority are already in the most_accts (then ck'ed on github)
+    social_media_users = determine_most_media(data)
 
-    # FINAL BATCH
+    # FINAL BATCH OF USERS
     final_list = []
     final_list.extend(list_most_followed)
     final_list.extend(github_most_followed)
-    final_set = set(final_list)
+    # final_list.extend(social_media_users)
 
-    return final_set, len(final_set)
+    # DETERMINE BONUS AMTS
+    pt_awards = {}
+    for user in final_list:
+        if user in pt_awards:
+            pt_awards[user] += 1
+        else:
+            pt_awards[user] = 1
+
+    total_bonus_pts = len(final_list)
+    bonus_per_pt = 1000.00/total_bonus_pts
+
+    bonus_amts = []
+    for user, pt in pt_awards.items():
+        final_award = round(pt * bonus_per_pt,3)
+        bonus_amts.append( {"keybase": user, "bonus": final_award} )
+
+    return json.dumps(bonus_amts)
 
 
-print main()
+if __name__ == "__main__":
+    if len(sys.argv) > 1:
+        p = sys.argv[1]
+    else:
+        p = "https://keybase.io/jobs/q/b5c602f8306d711b?page=data"
+
+    print main(p)
