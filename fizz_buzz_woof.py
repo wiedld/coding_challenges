@@ -7,11 +7,6 @@ def solution(N):
         by 7 -> Woof
         by combo, cancat (3,5 -> FizzBuzz)"""
 
-    # 15 is 3*5
-    # 21 is 3*7
-    # 35 is 5*7
-    # 105 is 3*5*7
-
     # make list of nums
     results = [x for x in range (1,N+1)]
 
@@ -19,9 +14,6 @@ def solution(N):
     results = word_replace(results, 3, "Fizz")
     results = word_replace(results, 5, "Buzz")
     results = word_replace(results, 7, "Woof")
-    results = word_replace(results, 21, "FizzWoof")
-    results = word_replace(results, 35, "BuzzWoof")
-    results = word_replace(results, 105, "FizzBuzzWoof")
 
     # print out result
     for item in results:
@@ -34,7 +26,11 @@ def word_replace(num_list, factorial, word):
     # replace at indexed location
     while (multiple*factorial) <= len(num_list):
         index = (multiple * factorial)-1    # list is 1->N
-        num_list[index] = word
+
+        if type(num_list[index]) == int:
+            num_list[index] = word
+        else:
+            num_list[index] = num_list[index] + word
         multiple += 1
 
     return num_list
