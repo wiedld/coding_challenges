@@ -1,29 +1,18 @@
 
-# build the stack classes
+# build the stack class
 
 class Stack(object):
 
     def __init__(self):
-        self.top_layer = None
+        self.data = []
 
     def push(self, data):
-        self.top_layer = StackLayer(data, self.top_layer)
+        self.append(data)
 
     def pop(self):
-        if self.top_layer is not None:
-            value = self.top_layer.data
-            self.top_layer = self.top_layer.previous
-        else:
-            value = None
-
+        value = self.data.pop(-1)
         return value
 
-
-
-class StackLayer(object):
-    def __init__(self, data, previous):
-        self.data = data
-        self.previous = previous
 
 
 #######################################################
@@ -39,8 +28,11 @@ def solution(S):
     digits = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]
 
     for achar in S:
+        # what to do if an integer
         if achar in digits:
             calc_stack.push(int(achar))
+
+        # what to do if an operator
         elif achar in operators:
             value_1 = calc_stack.pop()
             value_2 = calc_stack.pop()
@@ -54,6 +46,7 @@ def solution(S):
                 prod = value_1 + value_2
             calc_stack.push(prod)
 
+        # what to do if not a recognizable character
         else:
             return "Error, string contains an invalid character."
 
@@ -61,5 +54,4 @@ def solution(S):
 
 
 print solution("13+62*7+*")
-
 print solution("11++")
